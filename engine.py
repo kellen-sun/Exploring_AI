@@ -41,6 +41,21 @@ class Value:
         out._backward = _backward
         return out
     
+    def relu(self):
+        out = Value(max(0, self.data), (self,), "ReLU")
+        def _backward():
+            self.grad += (self.data > 0) * out.grad
+        out._backward = _backward
+        return out
+    
+    def exp(self):
+        t = math.exp(self.data)
+        out = Value(t, (self,), "exp")
+        def _backward():
+            self.grad += t * out.grad
+        out._backward = _backward
+        return out
+
     def __pow__(self, other):
         assert isinstance(other, (int, float))
         # only works when lifting to the power of an int or float (aka constant)

@@ -38,56 +38,61 @@ for i in range(len(test_img)):
 print("Data setup...")
 
 # setup with two hidden layers of size 80 each
-n = MLP(784, [20, 10, 10])
+n = MLP(784, [10, 10])
 print("MLP created...")
+# print("number of parameters", len(n.parameters()))
 
 # calculating loss
 def findloss(predvals, train_y):
-    losses = []
-    for i in range(len(predvals)):
-        err = 0
-        for j in range(10):
-            err += (predvals[i][j]-train_y[i][j])**2
-            # still a value type
-        losses.append(err)
-    loss = sum(losses)
-    return loss
+    err = 0
+    s = len(predvals)
+    for i in range(s):
+        err += sum([(yi-scorei)**2 for yi, scorei in zip(train_y[i], predvals[i])])
+        # still a value type
+    
+    acc = [max(range(len(predvals[i])), key=lambda j: predvals[i][j].data) == max(range(len(predvals[i])), key=lambda j: train_y[i][j].data) for i in range(s)]
+    
+    return err * (1.0 / s), sum(acc)/len(acc)
 
 #training process:
 
-learningrate = 0.02
-numofpasses = 10
-batchsize = 20
+learningrate = 0.5
+numofpasses = 1
+batchsize = 100
 counter = 0
-for batch in range(1):
-    print("Training batch", batch+1, "of 100...")
+for batch in range(500):
+    print("Training batch", batch+1, "of 500...")
     for i in range(numofpasses):
         # forward pass
-        predvals = [n(x) for x in train_x[counter:counter+batchsize]]
-        loss = findloss(predvals, train_y)
+        predvals = list(map(n, train_x[counter:counter+batchsize]))
+        # predvals = [n(x) for x in train_x[counter:counter+batchsize]]
+        loss, acc = findloss(predvals, train_y)
         # backwards pass
         for p in n.parameters():
             p.grad = 0.0
         loss.backwards()
-        print("    Loss:", loss.data)
+        print("    Loss:", loss.data, "Acc:", acc)
         print("    Training", i+1, "of", numofpasses, "...")
         # update
+        learningrate = 0.5 - 0.49 * (batch+i)/(500+numofpasses)
         for p in n.parameters():
-            p.data+= - learningrate * p.grad
+            p.data -= learningrate * p.grad
         
     counter+=batchsize
     if batch%5 == 0:
         # checks accuracy
-        test_pred = [max(range(len(i)), key=lambda j: i[j].data) for i in [n(x) for x in test_x[:50]]]
+        predvals = list(map(n, train_x[counter:counter+batchsize]))
+        test_pred = [max(range(len(i)), key=lambda j: i[j].data) for i in
+                     map(n, test_x[:100])]
         # returns highest activated neuron in output layer ie: which digit
         # test predictions, of first 30
 
-        # check success rate on test data
+        # check accuracy on test data
         suc = 0
-        for i in range(50):
+        for i in range(100):
             if test_pred[i] == test_lab[i]:
                 suc+=1
-        print("Success rate on test data:", suc/50.0)
+        print("Accuracy on test data:", suc/100.0)
 
 # write weights to a file
 with open('weights.pkl', 'wb') as file:
