@@ -21,10 +21,10 @@ class Neuron():
     
 class Layer():
     # a layer of neutrons
-    def __init__(self, nin, nout):
+    def __init__(self, nin, nout, nonlin = True):
         # nin is number of inputs
         # nout is number of outputs
-        self.neurons = [Neuron(nin) for _ in range(nout)]
+        self.neurons = [Neuron(nin, nonlin= nonlin) for _ in range(nout)]
 
     def __call__(self, x):
         # call the whole layer given the activation of previous layer x (an array)
