@@ -18,11 +18,11 @@ def data_setup():
     return train_img.reshape(len(train_img), -1)/255, np.eye(10)[train_lab], test_img.reshape(len(test_img), -1)/255, np.eye(10)[test_lab]
 
 # parameters to optimize
-W1 = np.random.uniform(-1, 1, size=(32, 784))
-W2 = np.random.uniform(-1, 1, size=(32, 32))
-W3 = np.random.uniform(-1, 1, size=(10, 32))
-B1 = np.random.uniform(-1, 1, size=(32, ))
-B2 = np.random.uniform(-1, 1, size=(32, ))
+W1 = np.random.uniform(-1, 1, size=(16, 784))
+W2 = np.random.uniform(-1, 1, size=(16, 16))
+W3 = np.random.uniform(-1, 1, size=(10, 16))
+B1 = np.random.uniform(-1, 1, size=(16, ))
+B2 = np.random.uniform(-1, 1, size=(16, ))
 B3 = np.random.uniform(-1, 1, size=(10, ))
 
 def softmax(X):
@@ -51,7 +51,7 @@ def total_loss(Ps, GTs):
     return loss, acc
 
 def set_zero():
-    return np.zeros((32, 784)), np.zeros((32, 32)), np.zeros((10, 32)), np.zeros((32,)), np.zeros((32, )), np.zeros((10,)), np.zeros((10,)), np.zeros((10,)), np.zeros((32, )), np.zeros((32,))
+    return np.zeros((16, 784)), np.zeros((16, 16)), np.zeros((10, 16)), np.zeros((16,)), np.zeros((16, )), np.zeros((10,)), np.zeros((10,)), np.zeros((10,)), np.zeros((16, )), np.zeros((16,))
 
 def backward(Ps, A3s, A2s, A1s, GTs, A0s):
     dW1, dW2, dW3, dB1, dB2, dB3, dP, dA3, dA2, dA1 = set_zero()
@@ -64,13 +64,13 @@ def backward(Ps, A3s, A2s, A1s, GTs, A0s):
     dB3 += sum([(1- (A3s[x]*A3s[x]))*dA3 for x in range(n)])
     #print(dA3, dB3, GTs, sep = "\n")
     W3T = W3.T
-    dA2 += sum([np.array([np.dot(W3T[i], dB3) for i in range(32)]) for x in range(n)])
-    dW3 += sum([np.array([A2s[x][i]*dB3 for i in range(32)]).T for x in range(n)])
+    dA2 += sum([np.array([np.dot(W3T[i], dB3) for i in range(16)]) for x in range(n)])
+    dW3 += sum([np.array([A2s[x][i]*dB3 for i in range(16)]).T for x in range(n)])
     
     dB2 += sum([(1-A2s[x]*A2s[x])*dA2 for x in range(n)])
     W2T = W2.T
-    dA1 += sum([np.array([np.dot(W2T[i], dB2) for i in range(32)]) for x in range(n)])
-    dW2 += sum([np.array([A1s[x][i]*dB2 for i in range(32)]).T for x in range(n)])
+    dA1 += sum([np.array([np.dot(W2T[i], dB2) for i in range(16)]) for x in range(n)])
+    dW2 += sum([np.array([A1s[x][i]*dB2 for i in range(16)]).T for x in range(n)])
     dB1 += sum([(1-A1s[x]*A1s[x])*dA1 for x in range(n)])
     dW1 += sum([np.array([A0s[x][i]*dB1 for i in range(784)]).T for x in range(n)])
     return dW1, dW2, dW3, dB1, dB2, dB3
@@ -105,5 +105,5 @@ def test():
     print(total_loss(P, test_y)[1])
 
 train_x, train_y, test_x, test_y = data_setup()
-train(1, 60000, 0.05, 20, 150000)
+train(1, 60000, 0.05, 12, 150000)
 test()
