@@ -91,17 +91,16 @@ class Value:
     
     def backwards(self):
         # basically a BFS search from the back
-        order = [self]
-        queue = deque([self])
+        topo = []
         visited = set()
-        while queue:
-            v = queue.popleft()
+        def build_topo(v):
             if v not in visited:
                 visited.add(v)
                 for child in v._prev:
-                    queue.append(child)
-                    order.append(child)
-        #print(order)
+                    build_topo(child)
+                topo.append(v)
+        build_topo(self)
+        # go one variable at a time and apply the chain rule to get its gradient
         self.grad = 1
-        for v in order:
+        for v in reversed(topo):
             v._backward()

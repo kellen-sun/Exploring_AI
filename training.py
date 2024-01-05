@@ -28,16 +28,16 @@ test_lab = mnist_data["y_test"]
 train_x = []
 train_y = []
 for i in range(len(train_img)):
-    train_x.append([item for sublist in train_img[i] for item in sublist])
-    train_y.append([Value(1) if j==train_lab[i] else Value(-1) for j in range(10)])
+    train_x.append([item/255.0 for sublist in train_img[i] for item in sublist])
+    train_y.append([Value(1) if j==train_lab[i] else Value(0) for j in range(10)])
 test_x = []
 test_y = []
 for i in range(len(test_img)):
-    test_x.append([item for sublist in test_img[i] for item in sublist])
-    test_y.append([Value(1) if j==test_lab[i] else Value(-1) for j in range(10)])
+    test_x.append([item/255.0 for sublist in test_img[i] for item in sublist])
+    test_y.append([Value(1) if j==test_lab[i] else Value(0) for j in range(10)])
 print("Data setup...")
 
-n = MLP(784, [20, 20, 10])
+n = MLP(784, [10, 10, 10], softmax = True)
 print("MLP created...")
 # print("number of parameters", len(n.parameters()))
 
@@ -45,18 +45,17 @@ print("MLP created...")
 def findloss(predvals, train_y):
     err = 0
     s = len(predvals)
+    # print(predvals)
     for i, j in zip(predvals, train_y):
-        #sm = sum([scorei.exp() for scorei in i])
-        #err += sum([(yi - scorei.exp()/sm)**2 for yi, scorei in zip(j, i)])
         err += sum([(yi - scorei)**2
                      for yi, scorei in zip(j, i)])
         # still a value type
     #print(max(range(10), key=lambda k: predvals[0][k].data), max(range(10), key=lambda k: train_y[0][k].data))
     acc = [max(range(10), key=lambda k: i[k].data) == max(range(10), key=lambda k: j[k].data) for i,j in zip(predvals, train_y)]
-    return err, sum(acc)/s
+    return err/s, sum(acc)/s
 
 #training process:
-def train(bsize, alpha, num, bcount):
+def train(bsize, alpha, num, bcount, t):
     learningrate = alpha
     numofpasses = num
     batchsize = bsize
@@ -78,9 +77,9 @@ def train(bsize, alpha, num, bcount):
             learningrate = alpha - alpha * i/numofpasses
             for p in n.parameters():
                 p.data -= learningrate * p.grad
-            
+            #print("GRAD", p.grad)
             counter+=batchsize
-            if batch%5 == 0:
+            if batch%t == t-1:
                 # checks accuracy
                 test_pred = [max(range(len(i)), key=lambda j: i[j].data) for i in
                             map(n, test_x[:100])]
@@ -90,6 +89,7 @@ def train(bsize, alpha, num, bcount):
                     if test_pred[i] == test_lab[i]:
                         suc+=1
                 print("Accuracy on test data:", suc, "%")
+                #print("Gradients:", *[p.grad for p in n.parameters()][:100])
     test_pred = [max(range(len(i)), key=lambda j: i[j].data) for i in map(n, test_x[:1000])]
     # returns highest activated neuron in output layer ie: which digit
     suc = 0
@@ -101,10 +101,10 @@ def train(bsize, alpha, num, bcount):
     with open('weights.pkl', 'wb') as file:
         pickle.dump([i.data for i in n.parameters()], file)
 
-train(100, 1, 10, 100)
+train(10, 0.2, 10, 100, 10)
 
 # b=12
-# s=8
+# s=1
 
 # newpred = list(map(n, train_x[b:b+s]))
 # print("Prediction:     ", *newpred, sep="\n")

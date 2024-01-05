@@ -1,4 +1,4 @@
-import random
+import random, math
 from engine import Value
 
 class Neuron():
@@ -37,15 +37,21 @@ class Layer():
     
 class MLP():
     # multilayer perceptron
-    def __init__(self, nin, nouts):
+    def __init__(self, nin, nouts, softmax):
         #nin is size of input lists
         #nouts is a list of the size of each output layer
         sz = [nin] + nouts
+        self.sm = softmax
         self.layers = [Layer(sz[i], sz[i+1]) for i in range(len(nouts))]
 
     def __call__(self, x):
         for layer in self.layers:
             x = layer(x)
+        if self.sm:
+            sp = sum(i.exp() for i in x)
+            y = [i.exp()/sp for i in x]
+            # print(x)
+            return y
         return x
     
     def parameters(self):
