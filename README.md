@@ -1,0 +1,1 @@
+A collection of small projects where I explore and learn about AI.
