@@ -7,7 +7,8 @@ def distance(v1, v2):
     v2 = np.array(v2)
     return np.linalg.norm(v1 - v2)
 
-dirs = list(os.walk("C://Users//sunke//Desktop//Kellen//Programming//python//projects//Exploring_AI//File Search//test"))
+dirs = list(os.walk(".\\File Search\\test"))
+print(dirs)
 targets = {}
 for i in dirs:
     toadd = i[1]

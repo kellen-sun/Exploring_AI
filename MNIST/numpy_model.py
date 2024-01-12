@@ -1,7 +1,7 @@
 import numpy as np
 from math import log, exp
 
-mnist_data = np.load('mnist.npz')
+mnist_data = np.load('MNIST\\mnist.npz')
 # 60,000 training data [28x28 pixels]
 # 10,000 testing data
 print("Data loaded...")
@@ -94,5 +94,5 @@ def test():
     print(total_loss(P, test_y)[1])
 
 train_x, train_y, test_x, test_y = data_setup()
-train(batchsize=1, alpha=0.1, epochs=12)
+train(batchsize=1, alpha=0.05, epochs=12)
 test()
