@@ -22,8 +22,22 @@ At each point of weights, biases and activations, I keep track of their gradient
 
 ### Result
 
-I was able to train a model with an accuracy in the mid-90s after some tweaking of my variables and could easily reach high 80% in accuracy after < 5min of training on a laptop.
+I was able to train a model with an accuracy in the mid-90s after some tweaking of my variables and could easily reach high 80% in accuracy after < 5min of training on a laptop (without GPU).
 
 ## 📁 File Search
 
-In this project, I used a sentence transformer to map a short string (such as file or directory name) into a 384 dimensional vector that represents the meaning of the word. This allows for a file search system based on semantic search which matches the query to strings of similar meanings.
+In this project, I used a pre-trained sentence transformer to map a short string (such as file or directory name) into a 384 dimensional vector that represents the meaning of the word. This allows for a file search system based on semantic search which matches the query to strings of similar meanings.
+
+Given a query and a starting directory, I used ``os.walk`` to obtain all the subdirectories and files they contain recursively. Then, I used generated the embeddings for each filename and directory name. Finally, I went through all of them and found the one that matched the query the closest.
+
+The search algorithm could also be made faster by traversing the file structure as a graph. This uses the underlying assumption that folders which are grouped together likely have similar meanings. This would result in an approximate ``O(logn)`` time result which is a big step up from a brute force search of ``O(n)``, but might not always find the best item.
+
+## 💻 NanoGPT
+
+In this project, I learned about modern transformers by following Andrej Karpathy's YT tutorial, ["Let's build GPT: from scratch, in code, spelled out."](https://youtu.be/kCc8FmEb1nY)
+
+I created a model with nearly 2 million parameters which implemented self-attention on a bigram language model. I trained on 40,000 lines of Shakespeare's existing work (``input.txt``) with the goal of generating similar text. The final output generated can be found in ``output.txt``.
+
+This model has a character level generation. The model consists of 4 layers of 6 attention heads using a context window of 192 characters and 192 dimensions for embeddings. I trained it on a local cpu achieving a final loss of 1.4898. Each attention layer was fully connected with the next using a feed-forward layer with ReLU and dropout to prevent overfitting. Additionally, the model used an optimization by connecting previous layers directly to the end and from the source. This allows for faster training along the main branch which may not always need the head layers.
+
+I learned about the transformer model, embeddings, normalizing variance (to prevent softmax from being too skewed) and layer normalization.

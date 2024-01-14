@@ -11,18 +11,17 @@ with open('.\\NanoGPT\\input.txt', 'r', encoding='utf-8') as f:
 
 chars = sorted(list(set(text)))
 vocab_size = len(chars)
-
 encodelookup = {ch:i for i,ch in enumerate(chars)}
 decodelookup = {i:ch for i,ch in enumerate(chars)}
 encode = lambda s: [encodelookup[c] for c in s]
 decode = lambda l: "".join([decodelookup[i] for i in l])
-
 data = torch.tensor(encode(text), dtype = torch.long)
 
 n = int(0.9*len(data))
 train_data = data[:n]
 test_data = data[n:]
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = 'cuda' if torch.cuda.is_available() else 'cpu' # I know I'll have to train on CPU
+# but just pointing out the GPU training option here.
 max_iters = 5000
 eval_interval = 1000
 learning_rate = 3e-4
@@ -30,7 +29,6 @@ eval_iters = 200
 n_embd = 192
 n_head = 6
 dropout = 0.2
-
 block_size = 192
 batch_size = 64
 
@@ -41,20 +39,6 @@ def get_batch(split):
     y = torch.stack([data[i+1:i+block_size+1] for i in ix])
     return x,y
 
-@torch.no_grad()
-def estimate_loss():
-    out = {}
-    model.eval()
-    for split in ['train', 'test']:
-        losses = torch.zeros(eval_iters)
-        for k in range(eval_iters):
-            X,Y = get_batch(split)
-            logits, loss = model(X,Y)
-            losses[k] = loss.item()
-        out[split] = losses.mean()
-    model.train()
-    return out
-
 class FeedForward(nn.Module):
     def __init__(self, n_embd):
         super().__init__()
@@ -62,6 +46,7 @@ class FeedForward(nn.Module):
                                  nn.ReLU(),
                                  nn.Linear(4*n_embd, n_embd),
                                  nn.Dropout(dropout))
+    
     def forward(self, x):
         return self.net(x)
 
@@ -79,6 +64,27 @@ class Block(nn.Module):
         x = x + self.ffwd(self.ln2(x))
         return x
 
+class Head(nn.Module):
+    def __init__(self, head_size):
+        super().__init__()
+        self.key = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        B,T,C = x.shape
+        k = self.key(x)
+        q = self.query(x)
+        wei = q @ k.transpose(-2,-1) * C**-0.5 
+        # normalize to make sure variance doesn't get too high
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
+        wei = F.softmax(wei, dim=-1)
+        wei = self.dropout(wei)
+        v = self.value(x)
+        out = wei @ v
+        return out
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, num_heads, head_size):
@@ -134,33 +140,12 @@ class BigramLanguageModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
         return idx
 
-class Head(nn.Module):
-    def __init__(self, head_size):
-        super().__init__()
-        self.key = nn.Linear(n_embd, head_size, bias=False)
-        self.query = nn.Linear(n_embd, head_size, bias=False)
-        self.value = nn.Linear(n_embd, head_size, bias=False)
-        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
-        self.dropout = nn.Dropout(dropout)
-    def forward(self, x):
-        B,T,C = x.shape
-        k = self.key(x)
-        q = self.query(x)
-        wei = q @ k.transpose(-2,-1) * C**-0.5 
-        # normalize to make sure variance doesn't get too high
-        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
-        wei = F.softmax(wei, dim=-1)
-        wei = self.dropout(wei)
-        v = self.value(x)
-        out = wei @ v
-        return out
-
 
 model = BigramLanguageModel()
 m = model.to(device)
 xb, yb = get_batch('train')
 logits, loss = m(xb, yb)
-print(loss)
+print(loss.item())
 print(decode(m.generate(idx = torch.zeros((1,1), dtype = torch.long), max_new_tokens=100)[0].tolist()))
 
 optimizer = torch.optim.AdamW(m.parameters(), lr = learning_rate)
@@ -169,13 +154,12 @@ for steps in range(max_iters):
     xb, yb = get_batch('train')
     logits, loss = m(xb, yb)
     if steps % eval_interval == eval_interval-1:
-        print(steps, loss)
+        print(steps, loss.item())
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     optimizer.step()
 
-print(loss.item())
 final_out = decode(m.generate(idx = torch.zeros((1,1), dtype = torch.long), max_new_tokens=10000)[0].tolist())
-
+print(final_out)
 with open(".\\NanoGPT\\output.txt", 'w') as file:
     file.write(final_out)
