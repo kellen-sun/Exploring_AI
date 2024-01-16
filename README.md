@@ -1,5 +1,9 @@
 # 💻 Exploring AI 
 
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/kellen-sun/Exploring_AI.svg)
+![Python](https://img.shields.io/badge/python-language-blue.svg)
+
+
 As the name of this repository suggests, this is a collection of small projects where I explore and learn about AI. I aim to complete simple projects with additional depth for an educational purpose.
 
 ## ✍️ MNIST
